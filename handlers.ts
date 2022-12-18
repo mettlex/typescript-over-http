@@ -71,8 +71,6 @@ export const handleRun = async (context: RouterContext<"/run">) => {
           try {
             const { code } = await process.status();
 
-            await Deno.remove(filePath);
-
             const rawOutput = await process.output();
 
             if (code === 0) {
@@ -98,6 +96,8 @@ export const handleRun = async (context: RouterContext<"/run">) => {
       });
 
       const result = await Promise.race([promise, timeout(timeoutMs)]);
+
+      await Deno.remove(filePath);
 
       context.response.body = result as string;
 
