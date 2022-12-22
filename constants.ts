@@ -5,7 +5,7 @@ export const RATE_LIMIT_WINDOW = Deno.env.get("RATE_LIMIT_WINDOW")
   : 60 * 1000;
 export const RATE_LIMIT_MAX_REQ = Deno.env.get("RATE_LIMIT_MAX_REQ")
   ? parseInt(Deno.env.get("RATE_LIMIT_MAX_REQ") || "0")
-  : 10;
+  : 50;
 export const timeoutMs = Deno.env.get("TIMEOUT")
   ? parseInt(Deno.env.get("TIMEOUT") || "")
   : 10 * 1000;
