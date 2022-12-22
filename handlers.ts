@@ -5,6 +5,27 @@ import { timeout } from "./utils.ts";
 
 export const handleRun = async (context: RouterContext<"/run">) => {
   let code = context.request.url.searchParams.get("code");
+  const stateString = context.request.url.searchParams.get("state");
+
+  let state: {
+    logPrefix?: string;
+    promptValue?: string;
+    promptSkips?: number;
+  } | null = null;
+
+  if (stateString) {
+    try {
+      state = JSON.parse(stateString);
+    } catch (_error) {
+      context.response.status = 400;
+      context.response.body = JSON.stringify({
+        success: false,
+        message: "invalid state",
+        data: null,
+      });
+      return;
+    }
+  }
 
   context.response.headers.set("content-type", "application/json");
 
@@ -13,6 +34,10 @@ export const handleRun = async (context: RouterContext<"/run">) => {
       const body = context.request.body();
       const value = await body.value;
       code = decodeURIComponent(value?.code || "");
+
+      if (value?.state) {
+        state = value.state;
+      }
     } catch (error) {
       console.error(error);
     }
@@ -40,8 +65,39 @@ export const handleRun = async (context: RouterContext<"/run">) => {
 
       const file = await Deno.create(filePath);
 
-      const evalCode = `const keys = Object.keys(Deno); \
-        keys.forEach((prop) => { \
+      const evalCode = `const ____promptCount____ = ${
+        state?.promptSkips || 0
+      }; \
+        let ____promptSkipped____ = ____promptCount____;  \
+        globalThis.prompt = (title?: string) => {  \
+          if (____promptSkipped____ <= 0) {  \
+            console.log(  \
+              JSON.stringify({ \
+                state: { \
+                  prompt: { \
+                    title, \
+                    count: ____promptCount____ + 1, \
+                  }, \
+                }, \
+              }), \
+            );  \
+            Deno.exit();  \
+          } else {  \
+            ____promptSkipped____--;  \
+            return "${state?.promptValue}";  \
+          }  \
+        };  \
+        if ("${
+          state?.logPrefix?.replaceAll("\n", "\\n").replaceAll("\r", "\\r") ||
+          ""
+        }") { \
+          Deno.stdout.writeSync(new TextEncoder().encode(\`${state?.logPrefix
+            ?.replaceAll("`", "\\`")
+            .replaceAll("\n", "\\n")
+            .replaceAll("\r", "\\r")}\`)); \
+        } \
+        const keys = Object.keys(Deno); \
+        keys.forEach((prop) => { \ if (prop == "exit") return;
           Object.defineProperty(Deno, prop, { value: undefined }); }); \
         ${code}`;
 
