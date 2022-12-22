@@ -9,7 +9,7 @@ export const handleRun = async (context: RouterContext<"/run">) => {
 
   let state: {
     logPrefix?: string;
-    promptValue?: string;
+    promptValues?: string[];
     promptSkips?: number;
   } | null = null;
 
@@ -65,9 +65,11 @@ export const handleRun = async (context: RouterContext<"/run">) => {
 
       const file = await Deno.create(filePath);
 
-      const evalCode = `const ____promptCount____ = ${
-        state?.promptSkips || 0
-      }; \
+      const evalCode = `const ____promptValues____: any = [${state?.promptValues
+        ?.reverse()
+        ?.map((x) => `"${x}"`)
+        ?.join(", ")}]; \
+      const ____promptCount____ = ${state?.promptSkips || 0}; \
         let ____promptSkipped____ = ____promptCount____;  \
         globalThis.prompt = (title?: string) => {  \
           if (____promptSkipped____ <= 0) {  \
@@ -84,7 +86,7 @@ export const handleRun = async (context: RouterContext<"/run">) => {
             Deno.exit();  \
           } else {  \
             ____promptSkipped____--;  \
-            return "${state?.promptValue}";  \
+            return ____promptValues____[____promptSkipped____];  \
           }  \
         };  \
         if ("${
