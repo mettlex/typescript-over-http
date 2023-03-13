@@ -56,13 +56,11 @@ export const handleRun = async (context: RouterContext<"/run">) => {
   if (typeof code === "string" && code.includes("console.log")) {
     let process: Deno.Process | undefined = undefined;
 
+    const dirname = new URL(".", import.meta.url).pathname;
+    const fileName = Math.floor(Math.random() * 1000000).toString();
+    const filePath = `${dirname}files/${fileName}.ts`;
+
     try {
-      const dirname = new URL(".", import.meta.url).pathname;
-
-      const fileName = Math.floor(Math.random() * 1000000).toString();
-
-      const filePath = `${dirname}files/${fileName}.ts`;
-
       const file = await Deno.create(filePath);
 
       const evalCode = `const ____promptValues____: any = [${state?.promptValues
@@ -89,10 +87,7 @@ export const handleRun = async (context: RouterContext<"/run">) => {
             return ____promptValues____[____promptSkipped____];  \
           }  \
         };  \
-        if ("${
-          state?.logPrefix?.replaceAll("\n", "\\n").replaceAll("\r", "\\r") ||
-          ""
-        }") { \
+        if ("${state?.logPrefix?.replaceAll("\n", "\\n").replaceAll("\r", "\\r") || ""}") { \
           Deno.stdout.writeSync(new TextEncoder().encode(\`${state?.logPrefix
             ?.replaceAll("`", "\\`")
             .replaceAll("\n", "\\n")
@@ -106,13 +101,7 @@ export const handleRun = async (context: RouterContext<"/run">) => {
       await file.write(new TextEncoder().encode(evalCode));
 
       process = Deno.run({
-        cmd: [
-          "deno",
-          "run",
-          "--allow-net",
-          "--v8-flags=--max-old-space-size=10",
-          filePath,
-        ],
+        cmd: ["deno", "run", "--allow-net", "--v8-flags=--max-old-space-size=10", filePath],
         stdout: "piped",
         stderr: "piped",
       });
@@ -155,28 +144,30 @@ export const handleRun = async (context: RouterContext<"/run">) => {
 
       const result = await Promise.race([promise, timeout(timeoutMs)]);
 
+      stopProcess(process);
       await Deno.remove(filePath);
 
       context.response.body = result as string;
 
       return;
     } catch (error) {
-      if (typeof process !== "undefined") {
-        try {
-          process.kill("SIGTERM");
-          process.kill("SIGINT");
-        } catch (_error) {
-          // not interested
+      if (process) {
+        stopProcess(process);
+      }
+
+      try {
+        if (Deno.statSync(filePath).isFile) {
+          await Deno.remove(filePath);
         }
+      } catch (_error) {
+        // no op
       }
 
       context.response.status = 500;
       // console.error(error);
       context.response.body = JSON.stringify({
         success: false,
-        message: `${
-          (error as Error)?.message ? (error as Error)?.message : error
-        }`,
+        message: `${(error as Error)?.message ? (error as Error)?.message : error}`,
         data: null,
       });
       return;
@@ -190,3 +181,16 @@ export const handleRun = async (context: RouterContext<"/run">) => {
     data: null,
   });
 };
+
+async function stopProcess(process: Deno.Process) {
+  if (typeof process !== "undefined") {
+    try {
+      process.kill("SIGTERM");
+      process.kill("SIGINT");
+    } catch (_error) {
+      // not interested
+    }
+  }
+
+  await Promise.resolve(true);
+}

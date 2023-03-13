@@ -1,4 +1,4 @@
-import { RateLimiter } from "https://deno.land/x/oak_rate_limit@0.1.0-rc2/mod.ts";
+import { RateLimiter } from "https://deno.land/x/oak_rate_limit@v0.1.1/mod.ts";
 
 import { RATE_LIMIT_MAX_REQ, RATE_LIMIT_WINDOW } from "./constants.ts";
 

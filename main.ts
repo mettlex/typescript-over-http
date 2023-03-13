@@ -6,15 +6,13 @@ import { router } from "./routes.ts";
 
 const app = new Application();
 
-app.use(rateLimit);
+app.use(await rateLimit);
 app.use(router.routes());
 app.use(router.allowedMethods());
 
 app.addEventListener("listen", (event) => {
   console.log(
-    `Listening at ${event.secure ? "https://" : "http://"}${event.hostname}:${
-      event.port
-    }`,
+    `Listening at ${event.secure ? "https://" : "http://"}${event.hostname}:${event.port}`,
   );
 });
 
