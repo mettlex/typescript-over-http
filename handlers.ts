@@ -102,6 +102,9 @@ export const handleRun = async (context: RouterContext<"/run">) => {
 
       process = Deno.run({
         cmd: ["deno", "run", "--allow-net", "--v8-flags=--max-old-space-size=10", filePath],
+        env: {
+          NO_COLOR: "true",
+        },
         stdout: "piped",
         stderr: "piped",
       });
