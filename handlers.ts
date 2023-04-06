@@ -95,7 +95,7 @@ export const handleRun = async (context: RouterContext<"/run">) => {
         } \
         const keys = Object.keys(Deno); \
         keys.forEach((prop) => { \ if (prop == "exit") return;
-          Object.defineProperty(Deno, prop, { value: undefined }); }); \
+          Object.defineProperty(Deno, prop, { value: undefined }); });\n\
         ${code}`;
 
       await file.write(new TextEncoder().encode(evalCode));
