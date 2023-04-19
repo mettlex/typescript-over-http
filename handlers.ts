@@ -102,7 +102,14 @@ export const handleRun = async (context: RouterContext<"/run">) => {
       await file.write(new TextEncoder().encode(evalCode));
 
       process = Deno.run({
-        cmd: ["deno", "run", "--allow-net", "--v8-flags=--max-old-space-size=10", filePath],
+        cmd: [
+          "deno",
+          "run",
+          "--allow-net",
+          "--no-remote",
+          "--v8-flags=--max-old-space-size=10",
+          filePath,
+        ],
         env: {
           NO_COLOR: "true",
         },
