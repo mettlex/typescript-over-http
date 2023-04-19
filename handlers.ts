@@ -93,6 +93,7 @@ export const handleRun = async (context: RouterContext<"/run">) => {
             .replaceAll("\n", "\\n")
             .replaceAll("\r", "\\r")}\`)); \
         } \
+        Object.defineProperty(globalThis, "localStorage", { value: undefined });\n
         const keys = Object.keys(Deno); \
         keys.forEach((prop) => { \ if (prop == "exit") return;
           Object.defineProperty(Deno, prop, { value: undefined }); });\n\
